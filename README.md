@@ -1,115 +1,187 @@
 # DocuMind – RAG-Based Document Assistant
 
-DocuMind is a Retrieval-Augmented Generation (RAG) based document assistant that allows users to ask questions about their uploaded PDF documents.
+A Retrieval-Augmented Generation (RAG) based document assistant that allows users to upload PDF documents and ask questions about their content.
 
-It extracts text from PDFs, including scanned documents using OCR, divides the extracted content into overlapping chunks, generates embeddings using Sentence Transformers, and stores them in ChromaDB.
+DocuMind combines document processing, semantic search, vector storage, and Large Language Models (LLMs) to generate answers based on information retrieved from user-provided documents.
 
-When a user asks a question, DocuMind retrieves the most relevant document passages and provides them as context to the Gemini language model to generate a grounded answer.
+Instead of relying only on the general knowledge of an LLM, DocuMind retrieves relevant document passages and supplies them as context to Google Gemini to generate more relevant, document-grounded responses.
+
+---
 
 ## Features
 
-- **PDF Processing:** Extracts text from PDFs and uses EasyOCR for scanned pages.
-- **Token-Based Chunking:** Splits documents into 500-token chunks with 80-token overlap.
-- **Local Embeddings:** Uses Sentence Transformers (`all-MiniLM-L6-v2`).
-- **Vector Database:** Stores embeddings in a persistent ChromaDB collection.
-- **Semantic Retrieval:** Retrieves the five most relevant chunks for a question.
-- **Context-Grounded Answers:** Uses retrieved passages to generate answers through Gemini.
-- **Source Information:** Displays retrieved document names and chunk details.
-- **RAG Comparison:** Compares answers generated with and without document retrieval.
+- **PDF Upload:** Upload PDF documents through a web interface.
+- **Text Extraction:** Extracts text from PDF documents.
+- **OCR Support:** Uses EasyOCR to extract text from scanned PDF pages.
+- **Token-Based Chunking:** Splits extracted content into 500-token chunks with 80-token overlap.
+- **Embedding Generation:** Uses Sentence Transformers to convert text chunks into vector embeddings.
+- **Vector Database:** Stores document chunks and embeddings in ChromaDB.
+- **Semantic Retrieval:** Retrieves the five most relevant document chunks for a user query.
+- **Context-Grounded Answers:** Uses retrieved document passages as context for Gemini.
+- **Source Information:** Displays retrieved chunks, source filenames, and chunk metadata.
+- **RAG Comparison:** Provides a comparison between LLM responses generated with and without document retrieval.
+
+---
 
 ## Technologies Used
 
-| Component | Technology |
+| Technology | Purpose |
 |---|---|
-| Programming Language | Python |
-| Web Framework | Flask |
-| PDF Processing | PDF extraction and EasyOCR |
-| Embedding Model | Sentence Transformers |
-| Vector Database | ChromaDB |
-| Language Model | Google Gemini |
-| Frontend | HTML, CSS, JavaScript |
+| Python | Core programming language |
+| Flask | Backend web framework |
+| HTML, CSS, JavaScript | Frontend interface |
+| EasyOCR | Text extraction from scanned PDFs |
+| Sentence Transformers | Text embedding generation |
+| all-MiniLM-L6-v2 | Embedding model |
+| ChromaDB | Vector database |
+| Google Gemini API | LLM-based answer generation |
+
+---
 
 ## System Architecture
 
-The application follows this workflow:
+DocuMind follows a Retrieval-Augmented Generation workflow.
+
+### Document Processing Pipeline
 
 1. User uploads a PDF document.
-2. Text is extracted from the PDF.
-3. OCR is used when scanned pages require text recognition.
-4. Extracted text is divided into overlapping chunks.
-5. Sentence Transformers generates vector embeddings.
-6. ChromaDB stores the chunks and embeddings.
-7. User submits a question.
-8. The question is converted into an embedding.
-9. ChromaDB retrieves the most relevant document chunks.
-10. Retrieved context is passed to Gemini.
-11. Gemini generates an answer grounded in the supplied document context.
+2. The application validates the uploaded PDF.
+3. Text is extracted from the document.
+4. EasyOCR is used when scanned pages require OCR.
+5. Extracted text is stored in the `extracted_docs/` directory.
+6. The text is divided into overlapping token-based chunks.
+7. Sentence Transformers generates embeddings for the chunks.
+8. ChromaDB stores the chunks, embeddings, and source metadata.
 
-## Project Setup
+### Question Answering Pipeline
 
-### 1. Clone the repository
+1. User enters a question through the web interface.
+2. Sentence Transformers converts the question into an embedding.
+3. ChromaDB performs semantic similarity search.
+4. The five most relevant document chunks are retrieved.
+5. Retrieved passages are added to the Gemini prompt as document context.
+6. Gemini generates an answer based on the supplied context.
+7. The application displays the answer and retrieved source information.
+
+---
+
+## RAG Workflow
+
+```text
+             USER UPLOADS PDF
+                    |
+                    v
+             PDF PROCESSING
+                    |
+                    v
+          TEXT EXTRACTION / OCR
+                    |
+                    v
+             TEXT CHUNKING
+          (500 tokens, overlap 80)
+                    |
+                    v
+          EMBEDDING GENERATION
+           (Sentence Transformers)
+                    |
+                    v
+              CHROMADB
+           (Vector Storage)
+                    |
+                    |
+             USER QUESTION
+                    |
+                    v
+          QUESTION EMBEDDING
+                    |
+                    v
+          SEMANTIC RETRIEVAL
+                    |
+                    v
+          RELEVANT DOCUMENT CHUNKS
+                    |
+                    v
+           GEMINI LLM PROMPT
+                    |
+                    v
+            GROUNDED ANSWER
+                    |
+                    v
+             USER RESPONSE
+```
+
+---
+
+## Project Structure
+
+```text
+DocuMind-RAG-System/
+│
+├── templates/
+│   └── index.html
+│
+├── documents/              # Uploaded PDF documents
+├── extracted_docs/         # Extracted text files
+├── chroma_db/              # Persistent ChromaDB storage
+│
+├── app.py                  # Flask application and routes
+├── config.py               # Project configuration
+├── extract_documents.py    # PDF text extraction and OCR
+├── ingest.py               # Text chunking and embedding storage
+├── rag.py                  # Retrieval and Gemini integration
+│
+├── requirements.txt        # Python dependencies
+├── .env.example            # Sample environment configuration
+├── .gitignore              # Git ignored files
+└── README.md               # Project documentation
+```
+
+**Note:** The `documents/`, `extracted_docs/`, and `chroma_db/` directories are local runtime folders. They are created or populated during application execution and are excluded from the public GitHub repository.
+
+---
+
+## Installation and Setup
+
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/SnehaV-15/DocuMind-RAG-System.git
+
 cd DocuMind-RAG-System
 ```
 
-### 2. Create a virtual environment
+### 2. Create a Virtual Environment
 
 For Windows PowerShell:
 
 ```powershell
 python -m venv .venv
+
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install dependencies
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
+### 4. Configure the Gemini API Key
 
-Copy `.env.example` to `.env` and add your Gemini API key.
+Create a `.env` file in the project root directory using `.env.example` as a reference.
 
-Example:
+Add your Gemini API key:
 
 ```env
 GEMINI_API_KEY=your_api_key_here
 GEMINI_MODEL=gemini-3.8-flash
 ```
 
-Never upload your actual `.env` file or API key to GitHub.
+Replace `your_api_key_here` with your actual API key.
 
-### 5. Add documents
+**Important:** Never upload your `.env` file or API key to GitHub.
 
-Place your PDF documents inside the `documents/` directory.
-
-Use a substantive document collection equivalent to at least 10–20 pages.
-
-### 6. Extract document text
-
-```bash
-python extract_documents.py
-```
-
-The extracted text is stored in `extracted_docs/`.
-
-Check the extracted files to ensure that the text is readable.
-
-### 7. Generate chunks and embeddings
-
-```bash
-python ingest.py
-```
-
-This process:
-- Splits extracted text into chunks.
-- Generates embeddings.
-- Stores document chunks and embeddings in ChromaDB.
-
-### 8. Run the application
+### 5. Run the Application
 
 ```bash
 python app.py
@@ -119,83 +191,170 @@ Open the application in your browser:
 
 http://127.0.0.1:5000
 
+### 6. Upload Documents
+
+Use the PDF upload option in the application.
+
+The application processes the uploaded PDF, extracts its text, generates chunks and embeddings, and stores the resulting information in ChromaDB.
+
+The application supports PDF uploads up to 25 MB.
+
+**Alternative:** If you are preparing documents manually, place PDFs in `documents/`, run the extraction script, and then run ingestion:
+
+```bash
+python extract_documents.py
+
+python ingest.py
+```
+
+---
+
+## Application Modules
+
+### 1. Document Upload and Extraction
+
+The application accepts PDF documents and extracts their text.
+
+For scanned documents, EasyOCR provides optical character recognition to convert page images into readable text.
+
+### 2. Text Chunking and Embedding
+
+Extracted text is divided into manageable chunks.
+
+Current configuration:
+
+| Parameter | Value |
+|---|---:|
+| Chunk size | 500 tokens |
+| Chunk overlap | 80 tokens |
+| Embedding model | all-MiniLM-L6-v2 |
+| Retrieval count (Top-K) | 5 |
+
+Overlapping chunks help preserve context between consecutive text sections.
+
+### 3. Vector Storage
+
+ChromaDB stores the document chunks and their corresponding embeddings.
+
+It uses cosine distance for semantic similarity retrieval.
+
+### 4. Semantic Retrieval
+
+When a question is submitted, its embedding is compared with stored document embeddings.
+
+The system retrieves the five most relevant chunks from the vector database.
+
+### 5. Answer Generation
+
+The retrieved chunks are supplied to Gemini as context.
+
+The model is instructed to:
+- Answer using only the supplied document context.
+- Avoid inventing information.
+- Indicate when the answer cannot be found in the provided documents.
+- Mention source filenames when possible.
+
+---
+
 ## Application Demonstration
 
-DocuMind provides three important ways to test the RAG pipeline.
+DocuMind provides three main testing functionalities.
 
-**1. Inspect Retrieved Chunks**
+### 1. Inspect Retrieved Chunks
 
-Displays the most relevant document passages retrieved from ChromaDB, including source filenames, chunk numbers, and retrieval distances.
+Displays the retrieved document passages along with:
+- Source filename
+- Chunk number
+- Similarity distance
 
-**2. Ask with RAG**
+This helps verify whether the retrieval system finds relevant information.
 
-Generates an answer using retrieved document context. The model is instructed to answer only from the supplied context.
+### 2. Ask with RAG
 
-**3. Compare With and Without RAG**
+Generates an answer using the retrieved document context.
 
-Compares two responses to the same question:
+The answer is grounded in the information supplied to the Gemini model.
 
-- Without RAG: Gemini answers using its general knowledge without uploaded document context.
-- With RAG: Gemini answers using relevant passages retrieved from ChromaDB.
+### 3. Compare With and Without RAG
 
-### Example Demonstration Question
+This functionality compares two responses to the same question.
 
-Question:
+**Without RAG:**
+- The question is sent directly to Gemini.
+- No uploaded document context is provided.
+- The response is generated using the model's general knowledge.
+
+**With RAG:**
+- Relevant document chunks are retrieved from ChromaDB.
+- Retrieved passages are supplied to Gemini.
+- The answer is generated using the provided document context.
+
+This comparison demonstrates how retrieval can help an LLM answer questions about information contained in specific documents.
+
+---
+
+## Sample Demonstration
+
+**Question:**
 
 "What are the names of the three HTML pages created in the Visual Studio Code Flask tutorial?"
 
-Expected document-specific answer:
+**Expected document-specific answer:**
 
-- `home.html`
-- `about.html`
-- `contact.html`
+1. `home.html`
+2. `about.html`
+3. `contact.html`
 
-The relevant information is available in the Flask tutorial document, page 21.
+The information is available on page 21 of the Flask tutorial PDF.
 
-Use this question to demonstrate retrieval and grounded answering. Record the actual outputs of both comparison modes before claiming a successful comparison.
+This question can be used to demonstrate semantic retrieval and document-grounded answering.
 
-## Project Structure
+---
 
-```text
-DocuMind-RAG-System/
-│
-├── documents/             # Uploaded PDF documents
-├── extracted_docs/        # Extracted text files
-├── chroma_db/             # Persistent vector database
-│
-├── templates/
-│   └── index.html         # Web application interface
-│
-├── app.py                 # Flask application and routes
-├── config.py              # Project configuration
-├── extract_documents.py   # PDF text extraction and OCR
-├── ingest.py               # Chunking and embedding generation
-├── rag.py                  # Retrieval and Gemini integration
-│
-├── requirements.txt
-├── .env.example
-├── .gitignore
-└── README.md
-```
+## Advantages of DocuMind
 
-## Important Notes
+- Enables question answering over user-provided documents.
+- Combines semantic search with LLM-based generation.
+- Supports scanned PDF documents through OCR.
+- Provides source information for retrieved passages.
+- Uses persistent local vector storage.
+- Allows comparison between responses with and without retrieval.
+- Reduces reliance on an LLM's general knowledge for document-specific questions.
 
-- Sentence Transformers generates embeddings locally.
-- ChromaDB stores the vector database locally.
-- Gemini API is used for language generation and requires an API key.
-- Initial setup may download embedding and OCR models.
-- OCR accuracy depends on document quality and scan resolution.
-- Gemini API usage is subject to the provider's rate limits.
-- The application is designed to answer from retrieved document context and should indicate when the required information cannot be found.
+---
+
+## Limitations
+
+- Answer quality depends on the quality of extracted document text.
+- OCR results may contain errors for low-quality scanned pages.
+- Retrieval quality depends on chunking, embeddings, and document content.
+- Gemini generation requires an internet connection and a valid API key.
+- Gemini API usage is subject to provider rate limits.
+- The system is designed for PDF documents rather than arbitrary file formats.
+
+---
 
 ## Future Enhancements
 
-- Support additional document formats.
-- Improve document management and deletion.
-- Add conversation history.
-- Implement more advanced retrieval techniques.
-- Add support for multiple users.
+- Support for additional document formats.
+- Improved document management and deletion.
+- Conversation history and multi-turn question answering.
+- Advanced retrieval and reranking techniques.
+- Support for multiple users.
+- Improved document summarization.
+
+---
 
 ## Author
 
-Developed as a Retrieval-Augmented Generation project using Python, Flask, Sentence Transformers, ChromaDB, and Google Gemini.
+**Sneha V-15**
+
+GitHub: https://github.com/SnehaV-15
+
+**Project:** DocuMind – RAG-Based Document Assistant
+
+**Technologies:** Python | Flask | Sentence Transformers | ChromaDB | Google Gemini
+
+---
+
+*Developed as a Retrieval-Augmented Generation project to demonstrate document processing, semantic retrieval, vector databases, and context-grounded LLM responses.*

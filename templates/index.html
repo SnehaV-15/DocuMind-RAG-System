@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocuMind | Document Assistant</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6fb;
+    color: #172033;
+}
+
+main {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 18px;
+}
+
+.panel {
+    background: white;
+    padding: 28px;
+    border-radius: 16px;
+    box-shadow: 0 8px 28px #17203312;
+    margin-bottom: 20px;
+}
+
+h1 { margin: 0 0 8px; }
+
+h2 { font-size: 19px; }
+
+.muted { color: #667085; }
+
+.upload-box {
+    border: 2px dashed #aab5cc;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    margin-top: 20px;
+    background: #fafbff;
+}
+
+input[type="file"] {
+    display: block;
+    margin: 15px auto;
+    max-width: 100%;
+}
+
+textarea {
+    width: 100%;
+    min-height: 105px;
+    padding: 14px;
+    border: 1px solid #cbd2e1;
+    border-radius: 10px;
+    font: inherit;
+    resize: vertical;
+}
+
+button {
+    border: 0;
+    border-radius: 9px;
+    padding: 12px 18px;
+    cursor: pointer;
+    background: #3157d5;
+    color: white;
+    font-weight: 600;
+}
+
+button.secondary { background: #344054; }
+
+button:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+.buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.output {
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid #e2e6ef;
+    border-radius: 12px;
+    background: #fbfcff;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.source {
+    border-left: 3px solid #3157d5;
+    padding: 10px 12px;
+    margin: 10px 0;
+    background: #f0f3ff;
+    white-space: pre-wrap;
+    font-size: 14px;
+}
+
+.hidden { display: none; }
+
+.document-list {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px;
+    margin-top: 10px;
+    background: #f7f8fc;
+    border: 1px solid #e2e6ef;
+    border-radius: 10px;
+}
+
+.pdf-icon {
+    font-size: 25px;
+}
+
+.document-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.document-name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.document-status {
+    color: #16834a;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.success-message {
+    color: #16834a;
+    font-weight: 600;
+}
+
+.total-chunks {
+    margin-top: 14px;
+    font-size: 14px;
+    color: #667085;
+}
+
+</style>
+</head>
+
+<body>
+
+<main>
+
+<section class="panel">
+
+    <h1>DocuMind</h1>
+
+    <p class="muted">
+        Upload your documents, ask questions, and compare answers
+        with and without Retrieval-Augmented Generation.
+    </p>
+
+    <div class="upload-box">
+
+        <h2>Upload your PDF document</h2>
+
+        <p class="muted">
+            Select a PDF from your device. Maximum size: 25 MB.
+        </p>
+
+        <form id="uploadForm">
+
+            <input
+                type="file"
+                id="pdfFile"
+                accept=".pdf,application/pdf"
+                required
+            >
+
+            <button type="submit" id="uploadButton">
+                Upload PDF
+            </button>
+
+        </form>
+
+        <p id="uploadStatus" class="muted"></p>
+
+        <div id="documentList" class="document-list hidden">
+
+            <h2>Uploaded Documents</h2>
+
+            <div id="documentItems"></div>
+
+            <p id="totalChunks" class="total-chunks"></p>
+
+        </div>
+
+    </div>
+
+</section>
+
+<section class="panel">
+
+    <h2>Ask your question</h2>
+
+    <textarea
+        id="question"
+        placeholder="Ask something about your uploaded documents..."
+    ></textarea>
+
+    <div class="buttons">
+
+        <button onclick="askRag()">Ask with RAG</button>
+
+        <button class="secondary" onclick="showRetrieval()">
+            Inspect retrieved chunks
+        </button>
+
+        <button class="secondary" onclick="compare()">
+            Compare with / without RAG
+        </button>
+
+    </div>
+
+    <p id="status" class="muted"></p>
+
+    <div id="answer" class="output hidden"></div>
+
+    <div id="sources" class="output hidden"></div>
+
+    <div id="comparison" class="output hidden"></div>
+
+</section>
+
+</main>
+
+<script>
+
+const q = () =>
+    document.getElementById("question").value.trim();
+
+const statusEl =
+    document.getElementById("status");
+
+// Uploaded documents for the current browser session
+const uploadedDocuments = new Map();
+
+let totalChunks = 0;
+
+function escapeHtml(value) {
+
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    }[char]));
+
+}
+
+async function post(url) {
+
+    if (!q()) {
+        statusEl.textContent = "Please enter a question.";
+        return null;
+    }
+
+    statusEl.textContent = "Working...";
+
+    try {
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                question: q()
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Request failed.");
+        }
+
+        statusEl.textContent = "Request completed.";
+
+        return data;
+
+    } catch (error) {
+
+        statusEl.textContent =
+            "Error: " + error.message;
+
+        return null;
+
+    }
+
+}
+
+function showSources(items) {
+
+    const el = document.getElementById("sources");
+
+    el.classList.remove("hidden");
+
+    if (!items || items.length === 0) {
+        el.textContent = "No retrieved source chunks available.";
+        return;
+    }
+
+    el.innerHTML =
+        "<h2>Retrieved source chunks</h2>" +
+
+        items.map(item => `
+
+            <div class="source">
+
+                <b>
+                    ${escapeHtml(item.source)}
+                    · Chunk ${escapeHtml(item.chunk)}
+                    · Distance ${escapeHtml(item.distance)}
+                </b>
+
+                <p>${escapeHtml(item.text)}</p>
+
+            </div>
+
+        `).join("");
+
+}
+
+
+// DISPLAY UPLOADED DOCUMENTS
+
+function renderDocuments() {
+
+    const list = document.getElementById("documentList");
+    const items = document.getElementById("documentItems");
+
+    list.classList.remove("hidden");
+
+    items.innerHTML = Array.from(uploadedDocuments.values())
+        .map(doc => `
+
+            <div class="document-item">
+
+                <span class="pdf-icon">📄</span>
+
+                <div class="document-info">
+
+                    <div class="document-name">
+                        ${escapeHtml(doc.name)}
+                    </div>
+
+                    <div class="document-status">
+                        ✓ Successfully indexed
+                    </div>
+
+                </div>
+
+            </div>
+
+        `).join("");
+
+    document.getElementById("totalChunks").textContent =
+        "Total indexed chunks: " + totalChunks;
+
+}
+
+
+// PDF UPLOAD
+
+document
+    .getElementById("uploadForm")
+    .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const fileInput =
+            document.getElementById("pdfFile");
+
+        const uploadButton =
+            document.getElementById("uploadButton");
+
+        const uploadStatus =
+            document.getElementById("uploadStatus");
+
+        if (!fileInput.files.length) {
+
+            uploadStatus.textContent =
+                "Please select a PDF file.";
+
+            return;
+
+        }
+
+        const file = fileInput.files[0];
+
+        if (file.type !== "application/pdf" &&
+            !file.name.toLowerCase().endsWith(".pdf")) {
+
+            uploadStatus.textContent =
+                "Please select a valid PDF file.";
+
+            return;
+
+        }
+
+        const formData = new FormData();
+
+        formData.append("file", file);
+
+        uploadButton.disabled = true;
+
+        uploadStatus.textContent =
+            "Uploading and processing PDF. Please wait...";
+
+        try {
+
+            const response = await fetch("/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Upload failed.");
+            }
+
+            uploadedDocuments.set(file.name, {
+                name: file.name
+            });
+
+            totalChunks = Number(data.chunks) || totalChunks;
+
+            renderDocuments();
+
+            uploadStatus.textContent =
+                data.message || "PDF uploaded and indexed successfully.";
+
+            uploadStatus.className = "success-message";
+
+            fileInput.value = "";
+
+        } catch (error) {
+
+            uploadStatus.textContent =
+                "Error: " + error.message;
+
+            uploadStatus.className = "muted";
+
+        } finally {
+
+            uploadButton.disabled = false;
+
+        }
+
+    });
+
+
+// ASK WITH RAG
+
+async function askRag() {
+
+    const data = await post("/ask");
+
+    if (!data) return;
+
+    const answer =
+        document.getElementById("answer");
+
+    answer.classList.remove("hidden");
+
+    answer.textContent = data.answer;
+
+    showSources(data.sources || []);
+
+}
+
+
+// INSPECT RETRIEVED CHUNKS
+
+async function showRetrieval() {
+
+    const data = await post("/retrieve");
+
+    if (!data) return;
+
+    showSources(data.chunks || []);
+
+}
+
+
+// COMPARE WITH AND WITHOUT RAG
+
+async function compare() {
+
+    const data = await post("/compare");
+
+    if (!data) return;
+
+    const comparison =
+        document.getElementById("comparison");
+
+    comparison.classList.remove("hidden");
+
+    const withoutRag =
+        data.without_rag ||
+        data.errors?.without_rag ||
+        "Answer not available.";
+
+    const withRag =
+        data.with_rag ||
+        data.errors?.with_rag ||
+        "Answer not available.";
+
+    comparison.innerHTML = `
+
+        <h2>Without RAG</h2>
+
+        <p>${escapeHtml(withoutRag)}</p>
+
+        <hr>
+
+        <h2>With RAG</h2>
+
+        <p>${escapeHtml(withRag)}</p>
+
+    `;
+
+    showSources(data.sources || []);
+
+    if (
+        data.errors?.without_rag ||
+        data.errors?.with_rag
+    ) {
+
+        statusEl.textContent =
+            "Comparison partially completed. Check the error displayed for the unavailable answer.";
+
+    } else {
+
+        statusEl.textContent =
+            "Both answers generated successfully.";
+
+    }
+
+}
+
+</script>
+
+</body>
+</html>

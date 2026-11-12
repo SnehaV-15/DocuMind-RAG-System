@@ -1,0 +1,9 @@
+flask
+chromadb
+sentence-transformers
+pymupdf
+easyocr
+pillow
+numpy
+python-dotenv
+google-genai

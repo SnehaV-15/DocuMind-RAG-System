@@ -1,0 +1,32 @@
+
+# Environment variables and secrets
+.env
+.env.*
+
+!.env.example
+
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# ChromaDB local storage
+chroma_db/
+
+# Generated extracted documents
+extracted_docs/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+
+# Test and log files
+.pytest_cache/
+*.log

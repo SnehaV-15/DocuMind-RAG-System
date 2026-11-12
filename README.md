@@ -347,16 +347,20 @@ This question can be used to demonstrate semantic retrieval and document-grounde
 ## Screenshots
 
 ### Application Homepage
-![Homepage](screenshots/01-homepage.png)
+<img width="803" height="651" alt="Screenshot 2026-11-12 150540" src="https://github.com/user-attachments/assets/ea2be960-8978-40d1-91ec-27783ada6350" />
+
 
 ### RAG-Based Answer
-![RAG Answer](screenshots/02-rag-answer.png)
+<img width="863" height="802" alt="Screenshot 2026-11-12 145924" src="https://github.com/user-attachments/assets/a96ff1ac-dbde-444e-8064-16f54fbd6f28" />
+
 
 ### Retrieved Document Chunks
-![Retrieved Chunks](screenshots/03-retrieved-chunks.png)
+<img width="843" height="678" alt="Screenshot 2026-11-12 140813" src="https://github.com/user-attachments/assets/d8026bc8-c77b-4e8d-b2f2-e204749796c0" />
+
 
 ### Without-RAG Comparison
-![Without RAG](screenshots/04-without-rag-comparison.png)
+<img width="930" height="583" alt="Screenshot 2026-11-12 140740" src="https://github.com/user-attachments/assets/5a229823-0605-4bda-bcd9-d3e0c701d59e" />
+
 
 ## Author
 

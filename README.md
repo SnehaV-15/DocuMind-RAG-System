@@ -344,6 +344,19 @@ This question can be used to demonstrate semantic retrieval and document-grounde
 - Improved document summarization.
 
 ---
+## Screenshots
+
+### Application Homepage
+![Homepage](screenshots/01-homepage.png)
+
+### RAG-Based Answer
+![RAG Answer](screenshots/02-rag-answer.png)
+
+### Retrieved Document Chunks
+![Retrieved Chunks](screenshots/03-retrieved-chunks.png)
+
+### Without-RAG Comparison
+![Without RAG](screenshots/04-without-rag-comparison.png)
 
 ## Author
 
